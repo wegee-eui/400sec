@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>400s Gaze - Fly Project</title>
+    <title>15s Gaze - Fly Project</title>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
@@ -14,15 +14,14 @@
 
         #container { width: 100%; height: 100%; position: relative; }
 
-        /* --- 1. 캐릭터 설정 (이미지 기반) --- */
+        /* --- 1. 캐릭터 설정 --- */
         #character {
             position: fixed; top: 0; left: 0;
-            width: 30px; /* 요청하신 가로 30px */
+            width: 30px; 
             pointer-events: none; z-index: 10;
             display: none;
-            /* 캐릭터 상단 중앙을 기준으로 매달림 */
+            /* 이미지의 상단 중앙을 기준으로 회전 */
             transform-origin: top center; 
-            transform: translate(-50%, 0); 
             will-change: transform;
         }
 
@@ -32,7 +31,7 @@
             display: block;
         }
 
-        /* --- 2. 대기 화면 (화면 정중앙 배치) --- */
+        /* --- 2. 대기 화면 (폰트 크기 대폭 확대) --- */
         #waiting-overlay {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background-color: black; z-index: 20;
@@ -41,22 +40,25 @@
         #waiting-content {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            text-align: center; width: 60%; max-width: 400px;
+            text-align: center; width: 80%; max-width: 600px;
         }
 
         #status-msg {
-            color: white; font-size: 14px; font-weight: bold;
-            display: block; margin-bottom: 20px; letter-spacing: 1px;
+            color: white; 
+            font-size: 5vw; /* 폰트 크기를 키움 (반응형) */
+            font-weight: 800;
+            display: block; 
+            margin-bottom: 30px; 
+            letter-spacing: -0.02em;
         }
 
-        /* 대기 화면 눈 (기존 CSS 눈 구조 유지) */
-        .eyes-wrapper { display: flex; justify-content: space-between; gap: 10px; }
+        .eyes-wrapper { display: flex; justify-content: space-between; gap: 15px; }
         .eye-container {
             flex: 1; aspect-ratio: 1.8 / 1; position: relative; overflow: hidden;
             display: flex; justify-content: center; align-items: center;
         }
         .eye-shape {
-            background-color: white; width: 70%; height: 850%; position: absolute;
+            background-color: white; width: 70%; height: 85%; position: absolute;
             border-radius: 40% 60% 40% 60% / 30% 70% 30% 70%;
         }
         .eye-container:last-child .eye-shape { transform: scaleX(-1); }
@@ -99,7 +101,7 @@
 </div>
 
 <script>
-    const TARGET_SECONDS = 400;
+    const TARGET_SECONDS = 15; // 15초 버전으로 수정
     let totalOutTimeMs = 0, outStartTime = null, stayStartTime = Date.now();
     let path = [], isFinished = false, msgTimeout = null;
 
@@ -107,36 +109,28 @@
     const flyImg = document.getElementById('fly-img');
     const waiting = document.getElementById('waiting-overlay');
 
-    // 스윙 관련 변수
     let angle = 0;
-    let amplitude = 25; // 초기 흔들림 강도
+    let amplitude = 25; 
     let lastMoveTime = Date.now();
 
-    // 1. 눈 깜빡임 로직 (이미지 교체)
+    // 눈 깜빡임 (이미지 교체)
     setInterval(() => {
         if (isFinished) return;
         flyImg.src = 'fly_closed.png';
-        setTimeout(() => {
-            flyImg.src = 'fly.png';
-        }, 200); // 0.2초 동안 감음
-    }, 4000); // 4초 주기
+        setTimeout(() => { flyImg.src = 'fly.png'; }, 200);
+    }, 4000);
 
-    // 2. 대롱거리는 스윙 애니메이션
+    // 스윙 애니메이션
     function animateSwing() {
         if (isFinished) return;
-
         const now = Date.now();
-        const idleTime = (now - lastMoveTime) / 1000; // 마지막 이동 후 흐른 시간(초)
-        
-        // 시간이 지날수록 흔들림(진폭) 감소 (감쇠 진동)
-        // 20초가 지나면 거의 멈춤
+        const idleTime = (now - lastMoveTime) / 1000;
         const currentAmplitude = Math.max(0, amplitude * Math.exp(-0.15 * idleTime));
-        
-        angle += 0.15; // 흔들림 속도
+        angle += 0.15;
         const rotation = Math.sin(angle) * currentAmplitude;
         
+        // 마우스 끝 지점(상단 중앙)을 기준으로 회전 유지
         char.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
-        
         requestAnimationFrame(animateSwing);
     }
     animateSwing();
@@ -145,10 +139,16 @@
         if (isFinished || outStartTime) return;
         path.push({ x, y });
         char.style.display = 'block';
+
+        /* 포인터의 '막대 끝'에 매달리게 하기:
+           일반적인 마우스 포인터는 좌상단이 기준이지만, 
+           사용자가 인지하는 화살표 끝부분에 맞추기 위해 
+           y좌표에 약간의 오프셋을 줄 수 있습니다. 
+           여기서는 입력받은 x, y 지점 바로 아래에 캐릭터 상단이 오도록 설정했습니다.
+        */
         char.style.left = x + 'px';
-        char.style.top = y + 'px';
+        char.style.top = (y + 5) + 'px'; // 포인터 끝에서 5px 정도 아래에 매달림
         
-        // 움직일 때마다 흔들림 강도 초기화 (다시 크게 흔들림)
         lastMoveTime = Date.now();
     }
 
@@ -159,7 +159,6 @@
         e.preventDefault();
     }, { passive: false });
 
-    // --- 이하 기존 타이머 및 결과 로직 동일 ---
     function userLeft() {
         if (isFinished) return;
         outStartTime = Date.now();

@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>15s Gaze - Fly Project</title>
+    <title>waiting...</title>
+    
+    <link rel="icon" type="image/png" href="fly.png">
+    <link rel="apple-touch-icon" href="fly.png">
+
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
@@ -14,24 +18,19 @@
 
         #container { width: 100%; height: 100%; position: relative; }
 
-        /* --- 1. 캐릭터 설정 --- */
+        /* --- 캐릭터 설정 --- */
         #character {
             position: fixed; top: 0; left: 0;
             width: 30px; 
             pointer-events: none; z-index: 10;
             display: none;
-            /* 이미지의 상단 중앙을 기준으로 회전 */
             transform-origin: top center; 
             will-change: transform;
         }
 
-        #fly-img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
+        #fly-img { width: 100%; height: auto; display: block; }
 
-        /* --- 2. 대기 화면 (폰트 크기 대폭 확대) --- */
+        /* --- 대기 화면 --- */
         #waiting-overlay {
             display: none; position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; background-color: black; z-index: 20;
@@ -44,34 +43,55 @@
         }
 
         #status-msg {
-            color: white; 
-            font-size: 5vw; /* 폰트 크기를 키움 (반응형) */
-            font-weight: 800;
-            display: block; 
-            margin-bottom: 30px; 
-            letter-spacing: -0.02em;
+            color: white; font-size: 5vw; font-weight: 800;
+            display: block; margin-bottom: 40px; letter-spacing: -0.02em;
         }
 
-        .eyes-wrapper { display: flex; justify-content: space-between; gap: 15px; }
+        .eyes-wrapper { display: flex; justify-content: center; gap: 30px; width: 100%; }
         .eye-container {
-            flex: 1; aspect-ratio: 1.8 / 1; position: relative; overflow: hidden;
+            width: 150px; 
+            aspect-ratio: 1.8 / 1; position: relative;
             display: flex; justify-content: center; align-items: center;
         }
         .eye-shape {
-            background-color: white; width: 70%; height: 85%; position: absolute;
+            background-color: white; 
+            width: 70%; height: 85%; 
+            position: absolute;
             border-radius: 40% 60% 40% 60% / 30% 70% 30% 70%;
         }
         .eye-container:last-child .eye-shape { transform: scaleX(-1); }
-        .pupil { background-color: black; width: 40%; aspect-ratio: 1 / 1; border-radius: 50%; }
+        
+        .pupil { 
+            background-color: black; 
+            width: 35%; aspect-ratio: 1 / 1; 
+            border-radius: 50%; 
+            position: relative; z-index: 5; 
+        }
 
-        /* --- 3. 결과 화면 --- */
+        /* --- 결과 화면 --- */
         #svgPathContainer {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             display: none; background-color: white; z-index: 30;
         }
         #pathSvg { width: 100%; height: 100%; }
-        #ui-overlay { display: none; position: fixed; bottom: 8%; left: 50%; transform: translateX(-50%); z-index: 40; }
-        #download-btn { padding: 12px 24px; background: black; color: white; border: none; cursor: pointer; font-weight: bold; }
+
+        #ui-overlay { 
+            display: none; position: fixed; bottom: 8%; left: 50%; 
+            transform: translateX(-50%); text-align: center; z-index: 40; 
+        }
+
+        .credits { 
+            margin-bottom: 25px; color: black; font-size: 14px; 
+            line-height: 1.8; font-weight: 500;
+        }
+        .credits a { color: black; text-decoration: underline; }
+
+        /* 버튼 스타일 수정 */
+        #download-btn { 
+            padding: 12px 28px; background: black; color: white; 
+            border: none; cursor: pointer; font-weight: bold; border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
     </style>
 </head>
 <body>
@@ -85,8 +105,14 @@
         <div id="waiting-content">
             <span id="status-msg">Waiting for <span id="out-timer">0</span> seconds</span>
             <div class="eyes-wrapper">
-                <div class="eye-container"><div class="eye-shape"></div><div class="pupil"></div></div>
-                <div class="eye-container"><div class="eye-shape"></div><div class="pupil"></div></div>
+                <div class="eye-container">
+                    <div class="eye-shape"></div>
+                    <div class="pupil"></div>
+                </div>
+                <div class="eye-container">
+                    <div class="eye-shape"></div>
+                    <div class="pupil"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -97,11 +123,17 @@
 </div>
 
 <div id="ui-overlay">
-    <button id="download-btn">이미지 저장하기</button>
+    <div class="credits">
+        You waited for 400 seconds…<br>
+        Concept & Production: <a href="https://www.instagram.com/wegee.eui/" target="_blank">@wegee.eui</a><br>
+        ⓒ 2026. Wegee. All rights reserved.
+    </div>
+    <button id="download-btn">Save your waiting path...</button>
 </div>
 
 <script>
-    const TARGET_SECONDS = 15; // 15초 버전으로 수정
+    /* 스크립트 로직은 이전과 동일하며 TARGET_SECONDS만 15로 유지됨 */
+    const TARGET_SECONDS = 15; 
     let totalOutTimeMs = 0, outStartTime = null, stayStartTime = Date.now();
     let path = [], isFinished = false, msgTimeout = null;
 
@@ -109,18 +141,14 @@
     const flyImg = document.getElementById('fly-img');
     const waiting = document.getElementById('waiting-overlay');
 
-    let angle = 0;
-    let amplitude = 25; 
-    let lastMoveTime = Date.now();
+    let angle = 0, amplitude = 25, lastMoveTime = Date.now();
 
-    // 눈 깜빡임 (이미지 교체)
     setInterval(() => {
         if (isFinished) return;
         flyImg.src = 'fly_closed.png';
         setTimeout(() => { flyImg.src = 'fly.png'; }, 200);
     }, 4000);
 
-    // 스윙 애니메이션
     function animateSwing() {
         if (isFinished) return;
         const now = Date.now();
@@ -128,8 +156,6 @@
         const currentAmplitude = Math.max(0, amplitude * Math.exp(-0.15 * idleTime));
         angle += 0.15;
         const rotation = Math.sin(angle) * currentAmplitude;
-        
-        // 마우스 끝 지점(상단 중앙)을 기준으로 회전 유지
         char.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
         requestAnimationFrame(animateSwing);
     }
@@ -139,16 +165,8 @@
         if (isFinished || outStartTime) return;
         path.push({ x, y });
         char.style.display = 'block';
-
-        /* 포인터의 '막대 끝'에 매달리게 하기:
-           일반적인 마우스 포인터는 좌상단이 기준이지만, 
-           사용자가 인지하는 화살표 끝부분에 맞추기 위해 
-           y좌표에 약간의 오프셋을 줄 수 있습니다. 
-           여기서는 입력받은 x, y 지점 바로 아래에 캐릭터 상단이 오도록 설정했습니다.
-        */
         char.style.left = x + 'px';
-        char.style.top = (y + 5) + 'px'; // 포인터 끝에서 5px 정도 아래에 매달림
-        
+        char.style.top = (y + 5) + 'px'; 
         lastMoveTime = Date.now();
     }
 
@@ -205,6 +223,24 @@
             poly.setAttribute('points', path.map(p => `${p.x},${p.y}`).join(' '));
         }
     }
+    
+    document.getElementById('download-btn').addEventListener('click', () => {
+        const svg = document.getElementById('pathSvg');
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement('canvas');
+        const viewBox = svg.viewBox.baseVal;
+        canvas.width = viewBox.width * 3; canvas.height = viewBox.height * 3;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const link = document.createElement('a');
+            link.download = 'my-waiting-path.png';
+            link.href = canvas.toDataURL(); link.click();
+        };
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    });
 </script>
 </body>
 </html>
